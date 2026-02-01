@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Me</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338ca;
+            --bg: #F3F4F6;
+            --surface: #FFFFFF;
+            --text-main: #111827;
+            --text-sub: #6B7280;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            /* Fixed height to prevent scrolling */
+            margin: 0;
+            overflow: hidden;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: var(--surface);
+            padding: 2rem;
+            /* Reduced padding */
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 380px;
+            /* Slightly narrower */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            /* Reduced gap */
+            position: relative;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            /* Smaller title */
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        p.subtitle {
+            font-size: 0.875rem;
+            color: var(--text-sub);
+            margin-top: 0.25rem;
+        }
+
+        .input-group {
+            width: 100%;
+            text-align: left;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+
+        /* Mic Button */
+        .mic-wrapper {
+            position: relative;
+            width: 120px;
+            /* Smaller wrapper */
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mic-button {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: none;
+            cursor: pointer;
+            z-index: 2;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mic-button:active {
+            transform: scale(0.92);
+        }
+
+        .mic-button svg {
+            width: 36px;
+            height: 36px;
+            fill: white;
+            pointer-events: none;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .mic-button.recording~.ring {
+            animation: ripple 2s infinite cubic-bezier(0, 0.2, 0.8, 1);
+        }
+
+        .mic-button:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+            transform: scale(1) !important;
+            box-shadow: none;
+        }
+
+        .ring:nth-of-type(1) {
+            width: 90px;
+            height: 90px;
+            animation-delay: 0s;
+        }
+
+        .ring:nth-of-type(2) {
+            width: 90px;
+            height: 90px;
+            animation-delay: 0.5s;
+        }
+
+        .ring:nth-of-type(3) {
+            width: 90px;
+            height: 90px;
+            animation-delay: 1s;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+
+        /* Status & Viz */
+        .status-container {
+            height: 40px;
+            /* Reduced height */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-sub);
+            transition: color 0.3s;
+        }
+
+        /* Audio Visualizer (CSS only) */
+        .bars {
+            display: flex;
+            gap: 4px;
+            height: 20px;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .bars.active {
+            opacity: 1;
+        }
+
+        .bar {
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 2px;
+            animation: bounce 0s infinite;
+        }
+
+        .bars.active .bar {
+            animation-duration: 0.5s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                height: 20%;
+            }
+
+            50% {
+                height: 100%;
+            }
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-text {
+            background: none;
+            border: 1px solid #E5E7EB;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            color: var(--text-sub);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-text:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #EEF2FF;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 1.5rem;
+            font-size: 0.7rem;
+            color: #9CA3AF;
+            max-width: 300px;
+            text-align: center;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Identity Modal -->
+    <div id="identityModal" class="modal-overlay">
+        <div class="modal-card">
+            <h2>Welcome</h2>
+            <p>Please provide your details to start the session.</p>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="modalName" placeholder="Your Full Name">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="modalEmail" placeholder="name@example.com">
+            </div>
+            <button id="startBtn">Start Session</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div>
+            <h1>Digital Me</h1>
+            <p class="subtitle">Niharika's Digital Twin</p>
+        </div>
+
+        <!-- Main Interface (Mic) -->
+        <div class="mic-wrapper">
+            <button class="mic-button" id="micBtn" aria-label="Microphone">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                    <path
+                        d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                </svg>
+            </button>
+            <div class="ring"></div>
+            <div class="ring"></div>
+            <div class="ring"></div>
+        </div>
+
+        <div class="status-container">
+            <div class="bars" id="bars">
+                <div class="bar" style="animation-delay: 0s"></div>
+                <div class="bar" style="animation-delay: 0.1s"></div>
+                <div class="bar" style="animation-delay: 0.2s"></div>
+                <div class="bar" style="animation-delay: 0.15s"></div>
+                <div class="bar" style="animation-delay: 0.05s"></div>
+            </div>
+            <p class="status-text" id="statusText">Hold to speak</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn-text" id="resetBtn">Reset Session</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        This voice agent represents a fixed personal profile and does not browse the internet.
+        <br>Generated content may be inaccurate.
+    </div>
+
+    <style>
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-card h2 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-main);
+        }
+
+        .modal-card p {
+            margin: 0 0 1.5rem 0;
+            color: var(--text-sub);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            color: var(--text-sub);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        #startBtn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        #startBtn:hover {
+            background: var(--primary-hover);
+        }
+    </style>
+
+    <script>
+        // --- Logic ---
+        const micBtn = document.getElementById('micBtn');
+        const statusText = document.getElementById('statusText');
+        const bars = document.getElementById('bars');
+        const resetBtn = document.getElementById('resetBtn');
+        const modal = document.getElementById('identityModal');
+        const startBtn = document.getElementById('startBtn');
+        const modalName = document.getElementById('modalName');
+        const modalEmail = document.getElementById('modalEmail');
+
+        // --- Session & Identity ---
+        let sessionId = localStorage.getItem('vdt_session');
+        if (!sessionId) {
+            sessionId = 'user_' + Math.random().toString(36).substring(2, 9);
+            localStorage.setItem('vdt_session', sessionId);
+        }
+
+        function checkIdentity() {
+            const storedName = localStorage.getItem('vdt_name');
+            const storedEmail = localStorage.getItem('vdt_email');
+            if (!storedName || !storedEmail) {
+                modal.classList.add('active');
+            }
+        }
+
+        startBtn.addEventListener('click', () => {
+            const name = modalName.value.trim();
+            const email = modalEmail.value.trim();
+            if (!name || !email) {
+                alert("Please fill in both fields.");
+                return;
+            }
+            localStorage.setItem('vdt_name', name);
+            localStorage.setItem('vdt_email', email);
+            modal.classList.remove('active');
+        });
+        checkIdentity();
+
+        // --- Audio Logic ---
+        let audioContext;
+        let processor;
+        let input;
+        let stream;
+        let audioData = [];
+
+        // Mobile Support
+        micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+        micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+        micBtn.addEventListener('mousedown', startRecording);
+        micBtn.addEventListener('mouseup', stopRecording);
+        micBtn.addEventListener('mouseleave', () => {
+            if (processor && audioContext) stopRecording();
+        });
+
+        function startRecording() {
+            if (micBtn.classList.contains('recording') || micBtn.disabled) return;
+
+            audioData = [];
+
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(s => {
+                stream = s;
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+
+                input = audioContext.createMediaStreamSource(stream);
+                processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                processor.onaudioprocess = e => {
+                    audioData.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+                };
+
+                input.connect(processor);
+                processor.connect(audioContext.destination);
+
+                micBtn.classList.add('recording');
+                statusText.innerText = "Listening...";
+                bars.classList.remove('active');
+            }).catch(err => {
+                console.error("Mic Error:", err);
+                statusText.innerText = "Mic Access Denied";
+            });
+        }
+
+        function stopRecording() {
+            if (!micBtn.classList.contains('recording')) return;
+
+            if (processor && input) {
+                processor.disconnect();
+                input.disconnect();
+            }
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+            }
+
+            // Encode to WAV
+            if (audioContext && audioData.length > 0) {
+                const wavBlob = encodeWAV(audioData, audioContext.sampleRate);
+
+                // Block Input
+                micBtn.disabled = true;
+                micBtn.classList.add('disabled'); // For any extra styling
+                statusText.innerText = "Processing...";
+
+                processAudio(wavBlob);
+            } else {
+                statusText.innerText = "Hold to speak";
+            }
+
+            micBtn.classList.remove('recording');
+        }
+
+        function encodeWAV(buffers, sampleRate) {
+            let length = buffers.reduce((acc, cur) => acc + cur.length, 0);
+            let pcm = new Float32Array(length);
+            let offset = 0;
+
+            buffers.forEach(b => {
+                pcm.set(b, offset);
+                offset += b.length;
+            });
+
+            const buffer = new ArrayBuffer(44 + pcm.length * 2);
+            const view = new DataView(buffer);
+
+            function writeString(v, o, s) {
+                for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i));
+            }
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + pcm.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, pcm.length * 2, true);
+
+            let idx = 44;
+            pcm.forEach(s => {
+                let val = Math.max(-1, Math.min(1, s));
+                view.setInt16(idx, val * 0x7fff, true);
+                idx += 2;
+            });
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        async function processAudio(blob) {
+            const formData = new FormData();
+            formData.append('file', blob);
+            formData.append('session_id', sessionId);
+
+            // Send stored identity
+            const name = localStorage.getItem('vdt_name');
+            const email = localStorage.getItem('vdt_email');
+
+            if (name) formData.append('user_name', name);
+            if (email) formData.append('user_email', email);
+
+            try {
+                const API_URL = 'http://localhost:8000/api/chat-voice';
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Server Error");
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+
+                await new Promise(r => setTimeout(r, 400));
+
+                statusText.innerText = "Speaking...";
+                bars.classList.add('active');
+
+                audio.play();
+
+                audio.onended = () => {
+                    statusText.innerText = "Hold to speak";
+                    bars.classList.remove('active');
+                    URL.revokeObjectURL(audioUrl);
+
+                    // Unblock
+                    micBtn.disabled = false;
+                };
+
+                audio.onerror = () => {
+                    statusText.innerText = "Playback Error";
+                    bars.classList.remove('active');
+                    micBtn.disabled = false;
+                }
+
+            } catch (error) {
+                console.error(error);
+                statusText.innerText = "Connection Failed";
+                bars.classList.remove('active');
+                micBtn.disabled = false;
+            }
+        }
+
+        // Reset
+        resetBtn.addEventListener('click', async () => {
+            // Clear Identity AND Session ID to force full rotation
+            localStorage.removeItem('vdt_name');
+            localStorage.removeItem('vdt_email');
+            localStorage.removeItem('vdt_session');
+
+            try {
+                await fetch('http://localhost:8000/api/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${sessionId}`
+                });
+                location.reload();
+            } catch (e) {
+                location.reload();
+            }
+        });
+    </script>
+</body>
+
+</html>
